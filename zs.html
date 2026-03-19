@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智力答题挑战</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 开始页面样式 */
+        .start-screen {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .start-screen h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .start-screen p {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .difficulty-select {
+            margin: 20px 0;
+        }
+
+        .difficulty-btn {
+            padding: 12px 24px;
+            margin: 0 8px 10px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            color: #3498db;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .start-btn:hover {
+            background: #27ae60;
+        }
+
+        /* 答题页面样式 */
+        .quiz-screen {
+            padding: 20px;
+            display: none;
+        }
+
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            color: #34495e;
+            font-size: 14px;
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .question-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option:hover {
+            border-color: #3498db;
+            background: #f0f7ff;
+        }
+
+        .option.correct {
+            background: #f8f9fa;
+            border-color: #2ecc71;
+            color: #27ae60;
+        }
+
+        .option.incorrect {
+            background: #ffebee;
+            border-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        .next-btn {
+            width: 100%;
+            padding: 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none;
+        }
+
+        /* 结果页面样式 */
+        .result-screen {
+            padding: 40px 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .score-box {
+            font-size: 48px;
+            font-weight: bold;
+            color: #3498db;
+            margin: 20px 0;
+        }
+
+        .result-text {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 375px) {
+            .question-title {
+                font-size: 16px;
+            }
+            
+            .option {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 开始页面 -->
+        <div class="start-screen" id="startScreen">
+            <h1>智力答题挑战</h1>
+            <p>选择难度开始答题，答错即结束挑战，每题10分，共10题！</p>
+            
+            <div class="difficulty-select">
+                <button class="difficulty-btn active" data-level="easy">简单</button>
+                <button class="difficulty-btn" data-level="medium">中等</button>
+                <button class="difficulty-btn" data-level="hard">困难</button>
+            </div>
+            
+            <button class="start-btn" id="startBtn">开始答题</button>
+        </div>
+
+        <!-- 答题页面 -->
+        <div class="quiz-screen" id="quizScreen">
+            <div class="progress">
+                <span>题目 <span id="currentQuestion">1</span>/<span id="totalQuestions">10</span></span>
+                <span>得分: <span id="score">0</span></span>
+            </div>
+            
+            <div class="question-card">
+                <div class="question-title" id="questionText">加载中...</div>
+                
+                <div class="options" id="optionsContainer">
+                    <!-- 选项会通过JS动态生成 -->
+                </div>
+            </div>
+            
+            <button class="next-btn" id="nextBtn">下一题</button>
+        </div>
+
+        <!-- 结果页面 -->
+        <div class="result-screen" id="resultScreen">
+            <h1 id="resultTitle">答题完成！</h1>
+            <div class="score-box" id="finalScore">0</div>
+            <p class="result-text" id="resultText">你真棒！继续加油</p>
+            <button class="restart-btn" id="restartBtn">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        // 题目数据库 - 难度递进的智力选择题
+        const questionBank = {
+            // 简单难度题库（扩充至30题）
+            easy: [
+                // 基础数学
+                { question: "1+1等于几？", options: ["0", "1", "2", "3"], answer: 2 },
+                { question: "2+3等于几？", options: ["4", "5", "6", "7"], answer: 1 },
+                { question: "10-5等于几？", options: ["3", "4", "5", "6"], answer: 2 },
+                { question: "3×4等于几？", options: ["10", "12", "14", "16"], answer: 1 },
+                { question: "16÷4等于几？", options: ["2", "3", "4", "5"], answer: 2 },
+                { question: "7+8等于几？", options: ["13", "14", "15", "16"], answer: 2 },
+                { question: "20-9等于几？", options: ["9", "10", "11", "12"], answer: 2 },
+                { question: "5×6等于几？", options: ["25", "30", "35", "40"], answer: 1 },
+                { question: "24÷6等于几？", options: ["3", "4", "5", "6"], answer: 1 },
+                
+                // 基础常识
+                { question: "一年有多少个月份？", options: ["10", "12", "14", "16"], answer: 1 },
+                { question: "一周有几天？", options: ["5", "6", "7", "8"], answer: 2 },
+                { question: "一天有多少小时？", options: ["12", "24", "36", "48"], answer: 1 },
+                { question: "五星红旗有几颗五角星？", options: ["4", "5", "6", "7"], answer: 1 },
+                { question: "哪种动物被称为“沙漠之舟”？", options: ["马", "骆驼", "羊", "牛"], answer: 1 },
+                { question: "中秋节吃什么传统食物？", options: ["饺子", "月饼", "粽子", "汤圆"], answer: 1 },
+                { question: "端午节吃什么传统食物？", options: ["饺子", "月饼", "粽子", "汤圆"], answer: 2 },
+                { question: "春节通常吃什么传统食物？", options: ["饺子", "月饼", "粽子", "汤圆"], answer: 0 },
+                { question: "冰箱的作用主要是？", options: ["加热", "制冷", "烘干", "消毒"], answer: 1 },
+                { question: "空调的主要作用不包括？", options: ["制冷", "制热", "做饭", "换气"], answer: 2 },
+                { question: "洗衣机的主要作用是？", options: ["洗碗", "洗衣服", "洗蔬菜", "洗水果"], answer: 1 },
+                
+                // 基础生物
+                { question: "以下哪种动物是哺乳动物？", options: ["鸡", "鸭", "猫", "蛇"], answer: 2 },
+                { question: "以下哪种动物是鸟类？", options: ["狗", "猫", "鸡", "猪"], answer: 2 },
+                { question: "以下哪种是水生动物？", options: ["老虎", "鱼", "马", "牛"], answer: 1 },
+                { question: "以下哪种是植食动物？", options: ["狮子", "老虎", "兔子", "狼"], answer: 2 },
+                { question: "以下哪种是肉食动物？", options: ["羊", "牛", "老虎", "马"], answer: 2 },
+                
+                // 基础自然
+                { question: "水的化学符号是什么？", options: ["H2O", "CO2", "O2", "NaCl"], answer: 0 },
+                { question: "氧气的化学符号是什么？", options: ["H2O", "CO2", "O2", "NaCl"], answer: 2 },
+                { question: "二氧化碳的化学符号是什么？", options: ["H2O", "CO2", "O2", "NaCl"], answer: 1 },
+                { question: "雪是什么颜色的？", options: ["白色", "黑色", "红色", "蓝色"], answer: 0 },
+                { question: "树叶通常是什么颜色的？", options: ["红色", "绿色", "蓝色", "黄色"], answer: 1 }
+            ],
+            
+            // 中等难度题库（扩充至40题）
+            medium: [
+                // 数学
+                { question: "圆周率π的近似值是多少？", options: ["3.14", "3.15", "3.16", "3.17"], answer: 0 },
+                { question: "三角形的内角和是多少度？", options: ["90°", "180°", "270°", "360°"], answer: 1 },
+                { question: "正方形的内角和是多少度？", options: ["180°", "270°", "360°", "450°"], answer: 2 },
+                { question: "长方形的面积公式是？", options: ["边长×边长", "长×宽", "底×高÷2", "πr²"], answer: 1 },
+                { question: "圆形的面积公式是？", options: ["边长×边长", "长×宽", "底×高÷2", "πr²"], answer: 3 },
+                { question: "1/2 + 1/3 = ?", options: ["2/5", "5/6", "1/5", "1/6"], answer: 1 },
+                { question: "0.5 + 0.25 = ?", options: ["0.65", "0.7", "0.75", "0.8"], answer: 2 },
+                { question: "1.2 × 0.5 = ?", options: ["0.5", "0.6", "0.7", "0.8"], answer: 1 },
+                
+                // 天文地理
+                { question: "以下哪个不是太阳系行星？", options: ["地球", "月球", "火星", "木星"], answer: 1 },
+                { question: "太阳系中最大的行星是？", options: ["地球", "木星", "土星", "火星"], answer: 1 },
+                { question: "地球绕什么转？", options: ["月球", "太阳", "木星", "火星"], answer: 1 },
+                { question: "月球绕什么转？", options: ["地球", "太阳", "木星", "火星"], answer: 0 },
+                { question: "一年有几个季节？", options: ["2", "3", "4", "5"], answer: 2 },
+                { question: "中国的首都是？", options: ["上海", "北京", "广州", "深圳"], answer: 1 },
+                { question: "世界上面积最大的国家是？", options: ["中国", "美国", "俄罗斯", "加拿大"], answer: 2 },
+                { question: "世界上人口最多的国家是？", options: ["中国", "美国", "印度", "巴西"], answer: 0 },
+                
+                // 生物
+                { question: "人体最硬的组织是什么？", options: ["骨骼", "牙齿", "指甲", "肌肉"], answer: 1 },
+                { question: "人体有多少块骨骼？", options: ["206", "208", "210", "212"], answer: 0 },
+                { question: "血液中负责运输氧气的是？", options: ["白细胞", "红细胞", "血小板", "血浆"], answer: 1 },
+                { question: "植物进行光合作用需要什么？", options: ["氧气", "二氧化碳", "氮气", "氢气"], answer: 1 },
+                { question: "人体最大的器官是？", options: ["心脏", "肝脏", "皮肤", "肺"], answer: 2 },
+                
+                // 物理
+                { question: "声音在什么介质中传播最快？", options: ["空气", "水", "固体", "真空"], answer: 2 },
+                { question: "光的传播速度约为？", options: ["3×10⁵km/s", "3×10⁶km/s", "3×10⁷km/s", "3×10⁸km/s"], answer: 0 },
+                { question: "力的单位是？", options: ["焦耳", "牛顿", "瓦特", "帕斯卡"], answer: 1 },
+                { question: "能量的单位是？", options: ["焦耳", "牛顿", "瓦特", "帕斯卡"], answer: 0 },
+                { question: "功率的单位是？", options: ["焦耳", "牛顿", "瓦特", "帕斯卡"], answer: 2 },
+                
+                // 文学
+                { question: "《西游记》的作者是谁？", options: ["曹雪芹", "罗贯中", "吴承恩", "施耐庵"], answer: 2 },
+                { question: "《三国演义》的作者是谁？", options: ["曹雪芹", "罗贯中", "吴承恩", "施耐庵"], answer: 1 },
+                { question: "《水浒传》的作者是谁？", options: ["曹雪芹", "罗贯中", "吴承恩", "施耐庵"], answer: 3 },
+                { question: "《红楼梦》的作者是谁？", options: ["曹雪芹", "罗贯中", "吴承恩", "施耐庵"], answer: 0 },
+                { question: "李白被称为？", options: ["诗圣", "诗仙", "诗佛", "诗鬼"], answer: 1 },
+                { question: "杜甫被称为？", options: ["诗圣", "诗仙", "诗佛", "诗鬼"], answer: 0 },
+                
+                // 科技
+                { question: "计算机的CPU指的是什么？", options: ["硬盘", "中央处理器", "内存", "显卡"], answer: 1 },
+                { question: "互联网的英文缩写是？", options: ["WWW", "Internet", "LAN", "WAN"], answer: 1 },
+                { question: "Wi-Fi的主要作用是？", options: ["有线网络", "无线网络", "存储数据", "处理数据"], answer: 1 },
+                { question: "奥运会每几年举办一次？", options: ["2", "4", "6", "8"], answer: 1 },
+                { question: "《红楼梦》的主要人物不包括？", options: ["林黛玉", "薛宝钗", "孙悟空", "贾宝玉"], answer: 2 }
+            ],
+            
+            // 困难难度题库（保持原有25题）
+            hard: [
+                // 物理类（高中难度）
+                { question: "下列哪个物理量是矢量？", options: ["质量", "时间", "位移", "温度"], answer: 2 },
+                { question: "爱因斯坦的质能方程是？", options: ["E=mc²", "F=ma", "P=UI", "W=Fs"], answer: 0 },
+                { question: "光的干涉现象证明了光的什么性质？", options: ["粒子性", "波动性", "波粒二象性", "直线传播"], answer: 1 },
+                { question: "第一宇宙速度的数值约为？", options: ["7.9km/s", "11.2km/s", "16.7km/s", "3×10⁸m/s"], answer: 0 },
+                
+                // 化学类（高中难度）
+                { question: "pH值为7的溶液呈什么性质？", options: ["酸性", "碱性", "中性", "无法确定"], answer: 2 },
+                { question: "黄金的化学元素符号是？", options: ["Au", "Ag", "Cu", "Pt"], answer: 0 },
+                { question: "下列哪种物质是强电解质？", options: ["醋酸", "氨水", "氯化钠", "酒精"], answer: 2 },
+                { question: "原电池中发生氧化反应的电极是？", options: ["正极", "负极", "阴极", "阳极"], answer: 1 },
+                
+                // 生物类（高中难度）
+                { question: "DNA的基本组成单位是？", options: ["氨基酸", "核苷酸", "葡萄糖", "脂肪酸"], answer: 1 },
+                { question: "光合作用产生的氧气来自于？", options: ["CO₂", "H₂O", "葡萄糖", "叶绿素"], answer: 1 },
+                { question: "基因重组发生在什么时期？", options: ["有丝分裂", "减数第一次分裂", "减数第二次分裂", "无丝分裂"], answer: 1 },
+                { question: "细胞膜的基本骨架是？", options: ["蛋白质", "磷脂双分子层", "糖类", "胆固醇"], answer: 1 },
+                
+                // 高中语文类
+                { question: "《离骚》的作者是？", options: ["李白", "杜甫", "屈原", "苏轼"], answer: 2 },
+                { question: "下列哪篇不是鲁迅的作品？", options: ["《狂人日记》", "《孔乙己》", "《围城》", "《阿Q正传》"], answer: 2 },
+                { question: "“落霞与孤鹜齐飞，秋水共长天一色”出自？", options: ["《滕王阁序》", "《岳阳楼记》", "《兰亭集序》", "《赤壁赋》"], answer: 0 },
+                { question: "“出师未捷身先死，长使英雄泪满襟”写的是？", options: ["曹操", "刘备", "诸葛亮", "周瑜"], answer: 2 },
+                
+                // 数学类
+                { question: "以下哪个数字是质数？", options: ["15", "23", "39", "49"], answer: 1 },
+                { question: "自然常数e的近似值是多少？", options: ["2.718", "3.141", "1.618", "0.618"], answer: 0 },
+                
+                // 计算机类
+                { question: "第一台计算机ENIAC诞生于哪一年？", options: ["1946", "1956", "1966", "1976"], answer: 0 },
+                { question: "HTTP协议的默认端口号是？", options: ["80", "8080", "443", "21"], answer: 0 },
+                
+                // 脑筋急转弯（仅1道）
+                { question: "什么门永远关不上？", options: ["木门", "铁门", "球门", "玻璃门"], answer: 2 },
+                
+                // 经济类
+                { question: "在经济学中，“看不见的手”是谁提出的？", options: ["凯恩斯", "亚当·斯密", "马克思", "李嘉图"], answer: 1 },
+                
+                // 奖项类
+                { question: "诺贝尔奖不包括以下哪个奖项？", options: ["物理学", "化学", "数学", "文学"], answer: 2 },
+                
+                // 编程类
+                { question: "以下哪个不是编程语言？", options: ["Python", "Java", "HTML", "C++"], answer: 2 },
+                
+                // 天文类
+                { question: "黑洞理论的主要研究者是？", options: ["牛顿", "霍金", "爱因斯坦", "伽利略"], answer: 1 },
+                
+                // 金融类
+                { question: "比特币的创始人化名为？", options: ["中本聪", "马斯克", "巴菲特", "比尔盖茨"], answer: 0 }
+            ]
+        };
+
+        // 彩蛋题目配置
+        const easterEggQuestion = {
+            question: "皮卡丘释放的十万伏特是属于交流电还是直流电？满足欧姆定律吗？",
+            options: ["直流电，不能", "直流电，能", "交流电，不能", "交流电，能"],
+            answer: 0 // 正确答案为A
+        };
+
+        // 按得分匹配的趣味文案（0分、10分、20分...100分）
+        const scoreTexts = {
+            0: "有实力哦，还吃鸭蛋",
+            10: "跟那个鸭蛋坐一桌",
+            20: "故意的？",
+            30: "懒得喷",
+            40: "将吧就",
+            50: "npc",
+            60: "人上人",
+            70: "顶级",
+            80: "读过书看过报的",
+            90: "半步斗帝",
+            100: "你已飞升"
+        };
+
+        // 全局变量
+        let currentDifficulty = "easy";
+        let currentQuestions = [];
+        let currentQIndex = 0;
+        let score = 0;
+        let selectedOption = null;
+        const TOTAL_QUESTIONS = 10; // 固定10道题
+        const EASTER_EGG_PROBABILITY = 0.4; // 40%概率出现彩蛋题
+
+        // DOM元素
+        const startScreen = document.getElementById("startScreen");
+        const quizScreen = document.getElementById("quizScreen");
+        const resultScreen = document.getElementById("resultScreen");
+        const startBtn = document.getElementById("startBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        const restartBtn = document.getElementById("restartBtn");
+        const difficultyBtns = document.querySelectorAll(".difficulty-btn");
+        const currentQuestionEl = document.getElementById("currentQuestion");
+        const totalQuestionsEl = document.getElementById("totalQuestions");
+        const scoreEl = document.getElementById("score");
+        const questionTextEl = document.getElementById("questionText");
+        const optionsContainerEl = document.getElementById("optionsContainer");
+        const finalScoreEl = document.getElementById("finalScore");
+        const resultTextEl = document.getElementById("resultText");
+        const resultTitleEl = document.getElementById("resultTitle");
+
+        // 初始化难度选择
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                difficultyBtns.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                currentDifficulty = btn.dataset.level;
+            });
+        });
+
+        // 开始答题
+        startBtn.addEventListener("click", startQuiz);
+
+        // 下一题
+        nextBtn.addEventListener("click", showNextQuestion);
+
+        // 重新开始
+        restartBtn.addEventListener("click", resetQuiz);
+
+        // 开始答题函数
+        function startQuiz() {
+            // 获取对应难度的题库并打乱
+            let baseQuestions = [...questionBank[currentDifficulty]];
+            shuffleArray(baseQuestions);
+            
+            // 确保有10道题（从扩充后的题库中随机选10道）
+            currentQuestions = baseQuestions.slice(0, TOTAL_QUESTIONS);
+            
+            // 再次打乱，保证随机性
+            shuffleArray(currentQuestions);
+            
+            // 重置状态
+            currentQIndex = 0;
+            score = 0;
+            selectedOption = null;
+            
+            // 更新UI
+            startScreen.style.display = "none";
+            quizScreen.style.display = "block";
+            scoreEl.textContent = score;
+            totalQuestionsEl.textContent = TOTAL_QUESTIONS; // 固定显示10题
+            
+            // 显示第一题
+            showQuestion(currentQuestions[currentQIndex]);
+        }
+
+        // 显示题目（增加彩蛋题逻辑）
+        function showQuestion(question) {
+            // 检查是否是第9题，并且判断是否触发彩蛋题（40%概率）
+            let currentQuestion = question;
+            if (currentQIndex + 1 === 9 && Math.random() < EASTER_EGG_PROBABILITY) {
+                currentQuestion = easterEggQuestion;
+            }
+            
+            // 重置选项状态
+            optionsContainerEl.innerHTML = "";
+            nextBtn.style.display = "none";
+            selectedOption = null;
+            
+            // 更新题目信息
+            currentQuestionEl.textContent = currentQIndex + 1;
+            questionTextEl.textContent = currentQuestion.question;
+            
+            // 生成选项
+            currentQuestion.options.forEach((option, index) => {
+                const optionEl = document.createElement("div");
+                optionEl.className = "option";
+                optionEl.dataset.index = index;
+                optionEl.textContent = option;
+                
+                // 选项点击事件
+                optionEl.addEventListener("click", () => {
+                    if (selectedOption !== null) return; // 防止重复选择
+                    
+                    selectedOption = index;
+                    
+                    // 判断是否正确
+                    if (index === currentQuestion.answer) {
+                        optionEl.classList.add("correct");
+                        score += 10; // 每题10分
+                        scoreEl.textContent = score;
+                        // 显示下一题按钮
+                        nextBtn.style.display = "block";
+                    } else {
+                        optionEl.classList.add("incorrect");
+                        // 显示正确答案
+                        const correctOptionEl = optionsContainerEl.querySelector(`[data-index="${currentQuestion.answer}"]`);
+                        correctOptionEl.classList.add("correct");
+                        
+                        // 答错直接显示结果页面，终止答题
+                        setTimeout(() => {
+                            showResult(false); // 传入false表示答错终止
+                        }, 1000); // 延迟1秒显示结果，让用户看到对错反馈
+                    }
+                });
+                
+                optionsContainerEl.appendChild(optionEl);
+            });
+        }
+
+        // 显示下一题
+        function showNextQuestion() {
+            currentQIndex++;
+            
+            // 检查是否还有题目
+            if (currentQIndex < TOTAL_QUESTIONS) {
+                showQuestion(currentQuestions[currentQIndex]);
+            } else {
+                // 答题结束，全部答对
+                showResult(true);
+            }
+        }
+
+        // 显示结果（按得分匹配文案）
+        function showResult(isAllCorrect) {
+            quizScreen.style.display = "none";
+            resultScreen.style.display = "block";
+            
+            // 更新结果信息
+            finalScoreEl.textContent = score;
+            
+            // 根据答题情况显示不同标题和评语
+            if (!isAllCorrect) {
+                resultTitleEl.textContent = "挑战失败！";
+                resultTitleEl.style.color = "#e74c3c";
+                
+                // 按得分匹配对应的趣味文案
+                resultTextEl.textContent = scoreTexts[score] || `很遗憾！最终得分：${score}分`;
+            } else {
+                resultTitleEl.textContent = "挑战成功！";
+                resultTitleEl.style.color = "#2c3e50";
+                // 满分显示"你已飞升"
+                resultTextEl.textContent = scoreTexts[score];
+            }
+        }
+
+        // 重置答题
+        function resetQuiz() {
+            resultScreen.style.display = "none";
+            startScreen.style.display = "block";
+            // 重置结果标题样式
+            resultTitleEl.textContent = "答题完成！";
+            resultTitleEl.style.color = "#2c3e50";
+        }
+
+        // 辅助函数：打乱数组
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>
